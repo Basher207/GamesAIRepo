@@ -82,25 +82,27 @@ namespace Complete
 
 
 
+
+
 		//Actions are stored as node functions so they can be reused in different behaviours 
-		public Node TargetUnit () {
-			//Updates the perception values every 0.1 seconds, run Selector 
+		public Node TargetUnit () { //Turns tank towards enemy
+			//Service will update the perception values every 0.1 seconds, while running Selector 
 			return new Service (0.1f, UpdatePerception, 
-				//Splits the node, if target is to right, than Turn (0.3f) succeeds in running, and the tank turns right
-				//Otherwise tank turns left 
+				//Splits the node, if target is to right, than Turn (0.7f) succeeds in running, and the tank turns right
+				//Otherwise Turn (-0.7f)
 				new Selector (
 					new BlackboardCondition ("targetOnRight",
 						Operator.IS_EQUAL, true,
 						Stops.NONE,
 						// Turn right toward target
-						new Action (() => Turn (0.3f))),
-					new Action (() => Turn (-0.3f))
+						new Action (() => Turn (0.7f))),
+					new Action (() => Turn (-0.7f))
 				)
 			);
 		}
 		public Node FireAndTurn (float fireVel = 0f) {
 			return new Sequence(
-				new Action(() => Turn(1f)),		//Sets rotation rate 
+				new Action(() => Turn(1f)),		//Sets rotation rate constantly to the right
 				new Action(() => Fire(fireVel)) //Set shooting velocity at 0 for maximum fire rate
 			);
 		}
@@ -114,9 +116,9 @@ namespace Complete
 		}
 		public Node RetreatAndFire (float fireVel = 0.5f) {
 			return new Sequence (
-					//(using Mathf.Sin (-0.6) means that the tank will mostly move backwards, but a bit forwards in case it's stuck)
+				//(using Mathf.Sin (-0.6) means that the tank will mostly move backwards, but a bit forwards now and than in case it gets stuck)
 				new Action (() => Move (Mathf.Sin (Time.time) - 0.6f)),	
-				new Action (() => Fire (fireVel)), 						//Sets shooting velocity at 0 to maximum fire rate
+				new Action (() => Fire (fireVel)), 	//Sets shooting velocity, default is 0 for maximum fire rate
 
 				TargetUnit ()
 			);
@@ -127,6 +129,7 @@ namespace Complete
 				new Action (() => Move (1f)),	
 				new Action (() => Fire (fireVel)), 						//Sets shooting velocity at 0 to maximum fire rate
 
+				//Targets player
 				TargetUnit ()
 			);
 		}
@@ -144,11 +147,13 @@ namespace Complete
 			return new Root(RetreatAndFire ());
 		}
 		private Root UnpredictableBehaviour() {
-			//Modulars time to loop actions throughtout 20 second intervals
+			//Modulars time, to loop actions throughtout 20 second intervals
 			//If modular time is < 4, FireAndTurn
 			//else If modular time is > 16, DeadlyFireAndTurn
 			//else If modular time is < 10, RetreatAndFire
 			//else If modular time is < 5, SeekAndFire
+			//else TargetUnit 
+
 			return new Root(
 				//Selector used so only 1 node is excuted at a time
 				new Selector (
